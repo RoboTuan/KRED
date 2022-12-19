@@ -394,11 +394,17 @@ def build_news_features_mind(config):
 
 def construct_adj_mind(config):#graph is triple
     print('constructing adjacency matrix ...')
+    print("sus")
     graph_file_fp = open(config['data']['knowledge_graph'], 'r', encoding='utf-8')
     graph = []
+    cnt = 0
     for line in graph_file_fp:
+        cnt += 1
+        if cnt % 100 != 0:
+            continue
         linesplit = line.split('\n')[0].split('\t')
         graph.append([int(linesplit[0])+1, int(linesplit[2])+1, int(linesplit[1])+1])
+    print(len(graph))
     kg = {}
     for triple in graph:
         head = triple[0]

@@ -48,7 +48,7 @@ parser.add_argument('-d', '--device', default=None, type=str,
                     help='indices of GPUs to enable (default: all)')
 
 config = ConfigParser.from_args(parser)
-
+# print(config['data'])
 epochs = 5
 batch_size = 64
 train_type = "single_task"
