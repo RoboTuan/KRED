@@ -715,15 +715,47 @@ def build_item2item_data(config):
     item2item_test["label"] = label_dev
     return item2item_train, item2item_test
 
-def load_data_mind(config):
+def load_data_mind(config, embedding_folder=None):
+    entities = entities_news(config)  # get all entities
+    entity2id = entity_to_id(config, entities)  # get dict with key entity WikidataId and value id
+    entity_embedding = [np.zeros(config["model"]["entity_embedding_dim"])]
+    entity2embedd = {}
+    entity_embedding, relation_embedding, entity2embedd =\
+        construct_embedding_mind(config, entity2id, entity_embedding, entity2embedd)
 
-    entity_adj, relation_adj = construct_adj_mind(config)
+    entity_adj, relation_adj = construct_adj_mind(config, entity2id, entity2embedd)
 
-    news_feature, max_entity_freq, max_entity_pos, max_entity_type = build_news_features_mind(config)
+    # Get the entity ids that are in the neighorhood of each node in entity_adj but not in the dictionary of the ids
+    # found in the train and valid title and abstract
+    entities_ids_not_embedded = set([item for items in entity_adj for item in items]).difference(set(entity2id.values()))
+    # Get the dictionary with key the entity and value the id for the entities not embedded
+    entity2id_not_embedded = ids_to_entity_id(config, entities_ids_not_embedded)
+    # Get the embedding for these new entities
+    entity_embedding, relation_embedding, entity2embedd = construct_embedding_mind(config,
+                                                                                   entity2id_not_embedded,
+                                                                                   entity_embedding,
+                                                                                   entity2embedd)
+    # Add the new entities to the dictionary
+    entity2id.update(entity2id_not_embedded)
+    # Invert the dictionary
+    id2entity = {v: k for k, v in entity2id.items()}
+    # The ids in entity_adj are the original ones, they need to be updated to the new ids given by entity2embedd
+    for i in range(1, len(entity_adj)):
+        for j in range(0, len(entity_adj[i])):
+            # print(entity_adj[i][j])
+            entity_adj[i][j] = entity2embedd[id2entity[entity_adj[i][j]]]
+            # print(entity_adj[i][j])
+            # sys.exit()
+    entity_embedding = torch.FloatTensor(np.array(entity_embedding))
+    relation_embedding = torch.FloatTensor(np.array(relation_embedding))
+
+
+    # Load the news
+    news_feature, max_entity_freq, max_entity_pos, max_entity_type =\
+        build_news_features_mind(config, entity2embedd, embedding_folder)
 
     user_history = build_user_history(config)
 
-    entity_embedding, relation_embedding = construct_embedding_mind(config)
 
     if config['trainer']['training_type'] == "multi-task":
         train_data, dev_data = get_user2item_data(config)
