@@ -513,24 +513,30 @@ def construct_adj_mind(config, entity2id, entity2embedd):  # graph is triple
             relation_adj[int(new_key)].append(int(kg[key][i][1]))
     return entity_adj, relation_adj
 
-def construct_embedding_mind(config):
+def construct_embedding_mind(config, entity2id, entity_embedding, entity2embedd):
     print('constructing embedding ...')
-    entity_embedding = []
-    relation_embedding = []
-    fp_entity_embedding = open(config['data']['entity_embedding'], 'r', encoding='utf-8')
-    fp_relation_embedding = open(config['data']['relation_embedding'], 'r', encoding='utf-8')
-    zero_array = np.zeros(config['model']['entity_embedding_dim'])
-    entity_embedding.append(zero_array)
-    relation_embedding.append(zero_array)
-    for line in fp_entity_embedding:
-        linesplit = line.strip().split('\t')
-        linesplit = [float(i) for i in linesplit]
-        entity_embedding.append(linesplit)
-    for line in fp_relation_embedding:
-        linesplit = line.strip().split('\t')
-        linesplit = [float(i) for i in linesplit]
-        relation_embedding.append(linesplit)
-    return torch.FloatTensor(entity_embedding), torch.FloatTensor(relation_embedding)
+    relation_embedding = [np.zeros(config['model']['entity_embedding_dim'])]
+    id2entity = {v:k for k, v in entity2id.items()}
+    with open(config['data']['entity_embedding'], 'r', encoding='utf-8') as fp_entity_embedding:
+        # The file has only the embeddings, not the entity names so we first need to get the entity ids (starting
+        # from 1) and then get the corresponding entity names from the entity2id dictionary
+        i = 1
+        for line in fp_entity_embedding:
+            if i in id2entity:
+                linesplit = line.strip().split('\t')
+                linesplit = [float(i) for i in linesplit]
+                # Dictionary with key the entity and value the position of the embedding in the list
+                entity2embedd[id2entity[i]] = len(entity_embedding) # The value is the current lenght of the list
+                entity_embedding.append(linesplit)
+            i += 1
+    with open(config['data']['relation_embedding'], 'r', encoding='utf-8') as fp_relation_embedding:
+        i = 1
+        for line in fp_relation_embedding:
+            linesplit = line.strip().split('\t')
+            linesplit = [float(i) for i in linesplit]
+            relation_embedding.append(linesplit)
+        i += 1
+    return entity_embedding, relation_embedding, entity2embedd
 
 def build_vert_data(config):
     random.seed(2020)
