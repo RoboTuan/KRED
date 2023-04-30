@@ -475,48 +475,42 @@ def build_news_features_mind(config):
     news_features["N0"][4] = np.zeros(config['model']['document_embedding_dim'])
     return news_features, 100, 10, 100
 
-def construct_adj_mind(config):#graph is triple
+def construct_adj_mind(config, entity2id, entity2embedd):  # graph is triple
     print('constructing adjacency matrix ...')
-    print("sus")
-    graph_file_fp = open(config['data']['knowledge_graph'], 'r', encoding='utf-8')
-    graph = []
-    cnt = 0
-    for line in graph_file_fp:
-        cnt += 1
-        if cnt % 100 != 0:
-            continue
-        linesplit = line.split('\n')[0].split('\t')
-        graph.append([int(linesplit[0])+1, int(linesplit[2])+1, int(linesplit[1])+1])
-    print(len(graph))
-    kg = {}
-    for triple in graph:
-        head = triple[0]
-        relation = triple[1]
-        tail = triple[2]
-        # treat the KG as an undirected graph
-        if head not in kg:
-            kg[head] = []
-        kg[head].append((tail, relation))
-        if tail not in kg:
-            kg[tail] = []
-        kg[tail].append((head, relation))
+    ids = set(entity2id.values())
+    with open(config['data']['knowledge_graph'], 'r', encoding='utf-8') as graph_file_fp:
+        kg = {}
+        for line in graph_file_fp:
+            linesplit = line.split('\n')[0].split('\t')
+            head = int(linesplit[0]) + 1
+            relation = int(linesplit[2]) + 1
+            tail = int(linesplit[1]) + 1
+            # treat the KG as an undirected graph
+            if head in ids:
+                if head not in kg:
+                    kg[head] = []
+                kg[head].append((tail, relation))
+            if tail in ids:
+                if tail not in kg:
+                    kg[tail] = []
+                kg[tail].append((head, relation))
 
-    fp_entity2id = open(config['data']['entity_index'], 'r', encoding='utf-8')
-    entity_num = int(fp_entity2id.readline().split('\n')[0])+1
+    entity_num = len(entity2embedd)
     entity_adj = []
     relation_adj = []
-    for i in range(entity_num+1):
+    id2entity = {v: k for k, v in entity2id.items()}
+    for i in range(entity_num + 1):
         entity_adj.append([])
         relation_adj.append([])
     for i in range(config['model']['entity_neighbor_num']):
         entity_adj[0].append(0)
         relation_adj[0].append(0)
     for key in kg.keys():
-        for index in range(config['model']['entity_neighbor_num']):
-            i = random.randint(0,len(kg[key])-1)
-            entity_adj[int(key)].append(int(kg[key][i][0]))
-            relation_adj[int(key)].append(int(kg[key][i][1]))
-
+        for _ in range(config['model']['entity_neighbor_num']):
+            i = random.randint(0, len(kg[key]) - 1)
+            new_key = entity2embedd[id2entity[int(key)]]
+            entity_adj[int(new_key)].append(int(kg[key][i][0]))
+            relation_adj[int(new_key)].append(int(kg[key][i][1]))
     return entity_adj, relation_adj
 
 def construct_embedding_mind(config):
