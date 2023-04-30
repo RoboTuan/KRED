@@ -408,33 +408,46 @@ def build_user_history(config):
                 user_history_dict[user_id + "_dev"][0] = 'N0'
     return user_history_dict
 
-def build_news_features_mind(config):
-    entity2id_dict = {}
-    fp_entity2id = open(config['data']['entity_index'], 'r', encoding='utf-8')
-    entity_num = int(fp_entity2id.readline().split('\n')[0])
-    for line in fp_entity2id.readlines():
-        entity, entityid = line.strip().split('\t')
-        entity2id_dict[entity] = int(entityid) + 1
-
+def build_news_features_mind(config, entity2embedd, embedding_folder=None):
+    # There are 4 features for each news: postion, freq, category, embeddings
     news_features = {}
-
     news_feature_dict = {}
-    fp_train_news = open(config['data']['train_news'], 'r', encoding='utf-8')
-    for line in fp_train_news:
-        newsid, vert, subvert, title, abstract, url, entity_info_title, entity_info_abstract = line.strip().split('\t')
-        news_feature_dict[newsid] = (title+" "+abstract, entity_info_title, entity_info_abstract)
-    # entityid, entity_freq, entity_position, entity_type
-    fp_dev_news = open(config['data']['valid_news'], 'r', encoding='utf-8')
-    for line in fp_dev_news:
-        newsid, vert, subvert, title, abstract, url, entity_info_title, entity_info_abstract = line.strip().split('\t')
-        news_feature_dict[newsid] = (title + " " + abstract, entity_info_title, entity_info_abstract)
+    # Load sentence embeddings from file if present
+    with open(config['data']['train_news'], 'r', encoding='utf-8') as fp_train_news:
+        if embedding_folder is not None:
+            train_sentences_embedding = read_pickle(embedding_folder + "train_news_embeddings.pkl")
+        for i, line in enumerate(fp_train_news):
+            fields = line.strip().split('\t')
+            # vert and subvert are the category and subcategory of the news
+            newsid, vert, subvert, title, abstract, url, entity_info_title, entity_info_abstract = fields
+            if embedding_folder is not None:
+                news_feature_dict[newsid] = (train_sentences_embedding[i], entity_info_title, entity_info_abstract, vert, subvert)
+            else:
+                news_feature_dict[newsid] = (title+" "+abstract, entity_info_title, entity_info_abstract, vert, subvert)
+    # Load sentence embeddings from file if present
+    with open(config['data']['valid_news'], 'r', encoding='utf-8') as fp_dev_news:
+        if embedding_folder is not None:
+            valid_sentences_embedding = read_pickle(embedding_folder + "valid_news_embeddings.pkl")
+        for i, line in enumerate(fp_dev_news):
+            fields = line.strip().split('\t')
+            newsid, vert, subvert, title, abstract, url, entity_info_title, entity_info_abstract = fields
+            if embedding_folder is not None:
+                news_feature_dict[newsid] = (valid_sentences_embedding[i], entity_info_title, entity_info_abstract, vert, subvert)
+            else:
+                news_feature_dict[newsid] = (title+" "+abstract, entity_info_title, entity_info_abstract, vert, subvert)
 
-    #deal with doc feature
+    # deal with doc feature
     entity_type_dict = {}
     entity_type_index = 1
-    model = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens')
-    for news in news_feature_dict:
-        sentence_embedding = model.encode(news_feature_dict[news][0])
+
+    if embedding_folder is None:
+        model = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens')
+
+    for i, news in enumerate(news_feature_dict):
+        if embedding_folder is not None:
+            sentence_embedding = news_feature_dict[news][0]  # Use the stored sentence embedding
+        else:
+            sentence_embedding = model.encode(news_feature_dict[news][0])
         news_entity_feature_list = []
         title_entity_json = json.loads(news_feature_dict[news][1])
         abstract_entity_json = json.loads(news_feature_dict[news][2])
@@ -443,19 +456,23 @@ def build_news_features_mind(config):
             if item['Type'] not in entity_type_dict:
                 entity_type_dict[item['Type']] = entity_type_index
                 entity_type_index = entity_type_index + 1
-            news_entity_feature[item['WikidataId']] = (len(item['OccurrenceOffsets']), 1, entity_type_dict[item['Type']]) #entity_freq, entity_position, entity_type
+            news_entity_feature[item['WikidataId']] =\
+                (len(item['OccurrenceOffsets']), 1, entity_type_dict[item['Type']]) #entity_freq, entity_position, entity_type
         for item in abstract_entity_json:
             if item['WikidataId'] in news_entity_feature:
-                news_entity_feature[item['WikidataId']] = (news_entity_feature[item['WikidataId']][0] + len(item['OccurrenceOffsets']), 1, entity_type_dict[item['Type']])
+                news_entity_feature[item['WikidataId']] =\
+                    (news_entity_feature[item['WikidataId']][0] + len(item['OccurrenceOffsets']), 1, entity_type_dict[item['Type']])
             else:
                 if item['Type'] not in entity_type_dict:
                     entity_type_dict[item['Type']] = entity_type_index
                     entity_type_index = entity_type_index + 1
-                news_entity_feature[item['WikidataId']] = (len(item['OccurrenceOffsets']), 2, entity_type_dict[
-                    item['Type']])  # entity_freq, entity_position, entity_type
+                news_entity_feature[item['WikidataId']] =\
+                    (len(item['OccurrenceOffsets']), 2, entity_type_dict[item['Type']])  # entity_freq, entity_position, entity_type
         for entity in news_entity_feature:
-            if entity in entity2id_dict:
-                news_entity_feature_list.append([entity2id_dict[entity], news_entity_feature[entity][0], news_entity_feature[entity][1], news_entity_feature[entity][2]])
+            if entity in entity2embedd:
+                news_entity_feature_list.append(
+                    [entity2embedd[entity], news_entity_feature[entity][0], news_entity_feature[entity][1], news_entity_feature[entity][2]]
+                )
         news_entity_feature_list.append([0, 0, 0, 0])
         if len(news_entity_feature_list) > config['model']['news_entity_num']:
             news_entity_feature_list = news_entity_feature_list[:config['model']['news_entity_num']]
@@ -474,6 +491,7 @@ def build_news_features_mind(config):
             news_features["N0"][j].append(0)
     news_features["N0"][4] = np.zeros(config['model']['document_embedding_dim'])
     return news_features, 100, 10, 100
+
 
 def construct_adj_mind(config, entity2id, entity2embedd):  # graph is triple
     print('constructing adjacency matrix ...')
