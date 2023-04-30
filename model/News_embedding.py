@@ -158,7 +158,7 @@ class News_embedding(nn.Module):
         kgat_entity_embeddings = self.kgat(entities)  # batch(news num) * entity num
         news_entity_embedding = kgat_entity_embeddings + entity_num_embedding + istitle_embedding + type_embedding #todo
 
-        aggregate_embedding, topk_index = self.attention_layer(news_entity_embedding, torch.FloatTensor(context_vecs).to(self.device))
+        aggregate_embedding, topk_index = self.attention_layer(news_entity_embedding, context_vecs)
         concat_embedding = torch.cat([aggregate_embedding, context_vecs],
                                     len(aggregate_embedding.shape) - 1)
         news_embeddings = self.tanh(self.final_embedding2(self.relu(self.final_embedding1(concat_embedding))))
