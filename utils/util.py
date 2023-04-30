@@ -132,6 +132,7 @@ def prepare_device(n_gpu_use):
               "available on this machine.")
         n_gpu_use = n_gpu
     device = torch.device('cuda:0' if n_gpu_use > 0 else 'cpu')
+    print(f"Using device: {device}")
     list_ids = list(range(n_gpu_use))
     return device, list_ids
 
@@ -682,19 +683,25 @@ def load_data_mind(config, embedding_folder=None):
         vert_train, vert_test = build_vert_data(config)
         pop_train, pop_test = build_pop_data(config)
         item2item_train, item2item_test = build_item2item_data(config)
-        return user_history, entity_embedding, relation_embedding, entity_adj, relation_adj, news_feature, max_entity_freq, max_entity_pos, max_entity_type, train_data, dev_data, vert_train, vert_test, pop_train, pop_test, item2item_train, item2item_test
+        return user_history, entity_embedding, relation_embedding, entity_adj, relation_adj, news_feature,\
+            max_entity_freq, max_entity_pos, max_entity_type, train_data, dev_data, vert_train, vert_test,\
+                pop_train, pop_test, item2item_train, item2item_test
     elif config['trainer']['task'] == "user2item":
         train_data, dev_data = get_user2item_data(config)
-        return user_history, entity_embedding, relation_embedding, entity_adj, relation_adj, news_feature, max_entity_freq, max_entity_pos, max_entity_type, train_data, dev_data
+        return user_history, entity_embedding, relation_embedding, entity_adj, relation_adj, news_feature,\
+            max_entity_freq, max_entity_pos, max_entity_type, train_data, dev_data
     elif config['trainer']['task'] == "item2item":
         item2item_train, item2item_test = build_item2item_data(config)
-        return user_history, entity_embedding, relation_embedding, entity_adj, relation_adj, news_feature, max_entity_freq, max_entity_pos, max_entity_type, item2item_train, item2item_test
+        return user_history, entity_embedding, relation_embedding, entity_adj, relation_adj, news_feature,\
+            max_entity_freq, max_entity_pos, max_entity_type, item2item_train, item2item_test
     elif config['trainer']['task'] == "vert_classify":
         vert_train, vert_test = build_vert_data(config)
-        return user_history, entity_embedding, relation_embedding, entity_adj, relation_adj, news_feature, max_entity_freq, max_entity_pos, max_entity_type, vert_train, vert_test
+        return user_history, entity_embedding, relation_embedding, entity_adj, relation_adj, news_feature,\
+            max_entity_freq, max_entity_pos, max_entity_type, vert_train, vert_test
     elif config['trainer']['task'] == "pop_predict":
         pop_train, pop_test = build_pop_data(config)
-        return user_history, entity_embedding, relation_embedding, entity_adj, relation_adj, news_feature, max_entity_freq, max_entity_pos, max_entity_type, pop_train, pop_test
+        return user_history, entity_embedding, relation_embedding, entity_adj, relation_adj, news_feature,\
+            max_entity_freq, max_entity_pos, max_entity_type, pop_train, pop_test
     else:
         print("task error, please check config")
 
