@@ -1,0 +1,7 @@
+{
+// select the python interpreter you want to use
+"python.defaultInterpreterPath": "/Users/lpdef/KRED/bin/python",
+"editor.rulers": [
+    120
+]
+}
