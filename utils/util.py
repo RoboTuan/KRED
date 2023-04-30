@@ -135,72 +135,6 @@ def prepare_device(n_gpu_use):
     list_ids = list(range(n_gpu_use))
     return device, list_ids
 
-def construct_adj(graph_file, entity2id_file, args):#graph is triple
-    print('constructing adjacency matrix ...')
-    graph_file_fp = open(graph_file, 'r', encoding='utf-8')
-    graph = []
-    for line in graph_file_fp:
-        linesplit = line.split('\n')[0].split('\t')
-        if len(linesplit) > 1:
-            graph.append([linesplit[0], linesplit[2], linesplit[1]])
-
-    kg = {}
-    for triple in graph:
-        head = triple[0]
-        relation = triple[1]
-        tail = triple[2]
-        # treat the KG as an undirected graph
-        if head not in kg:
-            kg[head] = []
-        kg[head].append((tail, relation))
-        if tail not in kg:
-            kg[tail] = []
-        kg[tail].append((head, relation))
-
-    fp_entity2id = open(entity2id_file, 'r', encoding='utf-8')
-    entity_num = int(fp_entity2id.readline().split('\n')[0])
-    entity_adj = []
-    relation_adj = []
-    for i in range(entity_num):
-        entity_adj.append([])
-        relation_adj.append([])
-    for key in kg.keys():
-        for index in range(args.entity_neighbor_num):
-            i = random.randint(0,len(kg[key])-1)
-            entity_adj[int(key)].append(int(kg[key][i][0]))
-            relation_adj[int(key)].append(int(kg[key][i][1]))
-
-    return entity_adj, relation_adj
-
-def construct_embedding(entity_embedding_file, relation_embedding_file):
-    print('constructing embedding ...')
-    entity_embedding = []
-    relation_embedding = []
-    fp_entity_embedding = open(entity_embedding_file, 'r', encoding='utf-8')
-    fp_relation_embedding = open(relation_embedding_file, 'r', encoding='utf-8')
-    for line in fp_entity_embedding:
-        linesplit = line.strip().split('\t')
-        linesplit = [float(i) for i in linesplit]
-        entity_embedding.append(linesplit)
-    for line in fp_relation_embedding:
-        linesplit = line.strip().split('\t')
-        linesplit = [float(i) for i in linesplit]
-        relation_embedding.append(linesplit)
-    return torch.FloatTensor(entity_embedding), torch.FloatTensor(relation_embedding)
-
-def my_collate_fn(batch):
-    return batch
-
-def construct_entity_dict(entity_file):
-    fp_entity2id = open(entity_file, 'r', encoding='utf-8')
-    entity_dict = {}
-    entity_num_all = int(fp_entity2id.readline().split('\n')[0])
-    lines = fp_entity2id.readlines()
-    for line in lines:
-        entity, entityid = line.strip().split('\t')
-        entity_dict[entity] = entityid
-    return entity_dict
-
 def real_batch(batch):
     data = {}
     data['item1'] = []
@@ -250,20 +184,6 @@ def maybe_download(url, filename=None, work_directory=".", expected_bytes=None):
             raise IOError("Failed to verify {}".format(filepath))
 
     return filepath
-
-def unzip_file(zip_src, dst_dir, clean_zip_file=True):
-    """Unzip a file
-
-    Args:
-        zip_src (str): Zip file.
-        dst_dir (str): Destination folder.
-        clean_zip_file (bool): Whether or not to clean the zip file.
-    """
-    fz = zipfile.ZipFile(zip_src, "r")
-    for file in fz.namelist():
-        fz.extract(file, dst_dir)
-    if clean_zip_file:
-        os.remove(zip_src)
 
 def get_mind_data_set(type):
     """ Get MIND dataset address
