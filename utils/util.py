@@ -26,25 +26,24 @@ def read_pickle(fname):
     return data
 
 def ensure_dir(dirname):
-    dirname = Path(dirname)
-    if not dirname.is_dir():
-        dirname.mkdir(parents=True, exist_ok=False)
+    if not os.path.isdir(dirname):
+        os.makedirs(dirname, exist_ok=False)
 
 def read_json(fname):
-    fname = Path(fname)
-    with fname.open('rt') as handle:
-        return json.load(handle, object_hook=OrderedDict)
+    with open(fname, 'rt') as file:
+        return json.load(file, object_hook=OrderedDict)
 
 def write_json(content, fname):
-    fname = Path(fname)
-    with fname.open('wt') as handle:
-        json.dump(content, handle, indent=4, sort_keys=False)
+    with open(fname, 'wt') as file:
+        json.dump(content, file, indent=4, sort_keys=False)
 
 def inf_loop(data_loader):
     ''' wrapper function for endless data loader. '''
     for loader in repeat(data_loader):
         yield from loader
 
+def my_collate_fn(batch):
+    return batch
 def prepare_device(n_gpu_use):
     """
     setup GPU device if available. get gpu device indices which are used for DataParallel
