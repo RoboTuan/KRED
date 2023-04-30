@@ -80,7 +80,9 @@ class Trainer(BaseTrainer):
 
             y_pred.extend(out)
         truth = self.test_data['label']
-        auc_score = cal_auc(y_pred, truth)
+        # Firth the ground truth and then the prediction,
+        # check `https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html`
+        auc_score = cal_auc(truth, y_pred)
         print("auc socre: " + str(auc_score))
         return auc_score
 
