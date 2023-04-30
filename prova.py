@@ -60,12 +60,6 @@ config['data_loader']['batch_size'] = batch_size
 config['trainer']['training_type'] = train_type
 config['trainer']['task'] = task
 config['trainer']['save_period'] = epochs/2
-# The following parameters define which of the extensions are used, 
-# by setting them to False the original KRED model is executed 
-config['model']['use_mh_attention'] = False
-config['model']['mh_number_of_heads'] = 12
-config['data']['use_entity_category'] = True
-config['data']['use_second_entity_category'] = False
 
 if not os.path.isfile(f"{config['data']['sentence_embedding_folder']}/train_news_embeddings.pkl"):
     write_embedding_news("./data/train", config["data"]["sentence_embedding_folder"])
@@ -81,4 +75,4 @@ if not os.path.isfile(f"{config['data']['sentence_embedding_folder']}/valid_news
 
 data = load_data_mind(config, config['data']['sentence_embedding_folder'])
 print("Data loaded, ready for training")
-# single_task_training(config, data)  # user2item
+single_task_training(config, data)  # user2item
