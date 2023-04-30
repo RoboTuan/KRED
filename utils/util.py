@@ -44,6 +44,27 @@ def inf_loop(data_loader):
 
 def my_collate_fn(batch):
     return batch
+
+def write_embedding_news(data_folder, save_folder):
+    """
+    Function to save the embedding of news in the training and valid data folders into the save folders. The embeddings
+    are created with the dstil-bert-base-nli-stsb-mean-tokens model from sentence-transformers. The data_folder is as
+    follows: `./data/train/` while the save_folder is `./data/train_embeddings/`.
+    """
+    if not os.path.isdir(save_folder):
+        print(f"Creating folder {save_folder}")
+        os.mkdir(save_folder)
+    embeddings =[]
+    model = SentenceTransformer('distilbert-base-nli-stsb-mean-tokens')
+    with open(f"{data_folder}/news.tsv", 'r', encoding='utf-8') as news:
+        for line in news:
+            line = line.strip().split('\t')
+            newsid, vert, subvert, title, abstract, url, entity_info_title, entity_info_abstract = line
+            embeddings.append(model.encode(f"{title} {abstract}", show_progress_bar=False))
+    write_pickle(embeddings, f"{save_folder}/{data_folder.split('/')[-1]}_news_embeddings.pkl")
+    print(f"Saved news embeddings for {data_folder} to {save_folder}")
+
+def entities_news(config):
 def prepare_device(n_gpu_use):
     """
     setup GPU device if available. get gpu device indices which are used for DataParallel
