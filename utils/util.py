@@ -65,6 +65,59 @@ def write_embedding_news(data_folder, save_folder):
     print(f"Saved news embeddings for {data_folder} to {save_folder}")
 
 def entities_news(config):
+    """
+    Return all the entities in the news data. The entities are extracted from the `WikidataId` of the `Title Entities`
+    and `Abstract Entities` fields of the news in the train and valid news.tsv files (see description in: 
+    https://github.com/msnews/msnews.github.io/blob/master/assets/doc/introduction.md).
+    """
+    entities = set()
+    # Add the WikidataId from the train entities
+    with open(config["data"]["train_news"]) as train_news:
+        for line in train_news:
+            _, _, _, _, _, _, entity_info_title, entity_info_abstract = line.strip().split('\t')  # only need last 2 columns
+            for entity in eval(entity_info_title):  # see if title_entities is not an empty list 
+                entities.add(entity["WikidataId"])
+            for entity in eval(entity_info_abstract):  # see if abstract_entities is not an empty list
+                entities.add(entity["WikidataId"])
+    # Add the WikidataId from the valid entities
+    with open(config["data"]["valid_news"]) as valid_news:
+        for line in valid_news:
+            _, _, _, _, _, _, entity_info_title, entity_info_abstract = line.strip().split('\t')
+            for entity in eval(entity_info_title):
+                entities.add(entity["WikidataId"])
+            for entity in eval(entity_info_abstract):
+                entities.add(entity["WikidataId"])
+    return entities
+                
+def entity_to_id(config, entities):
+    """
+    Return dictionary with entity `WikidataId' as key and entity id as value. The entity id is the id of the entity in
+    the file `entity2id.txt`. Only entities found with the `entities_news` function are added to the dictionary. The ids
+    are incremented by 1.
+    """
+    entity2id = {}
+    with open(config["data"]["entity_index"]) as entity2id_file:
+        next(entity2id_file)  # skip first line with number of entities
+        for line in entity2id_file:
+            entity, entity_id = line.strip().split('\t')
+            if entity in entities:
+                entity2id[entity] = int(entity_id) + 1  # increment the id by 1
+    return entity2id
+
+def ids_to_entity_id(config, ids):
+    """
+    We need this function in the `load_data_mind` function to get a dictiony with key the entity and value the id for
+    the entities not embedded.
+    """
+    entity2id = {}
+    with open(config["data"]["entity_index"]) as entity2id_file:
+        next(entity2id_file)
+        for line in entity2id_file:
+            entity, entity_id = line.strip().split('\t')
+            if int(entity_id) + 1 in ids:
+                entity2id[entity] = int(entity_id) + 1
+    return entity2id
+
 def prepare_device(n_gpu_use):
     """
     setup GPU device if available. get gpu device indices which are used for DataParallel
