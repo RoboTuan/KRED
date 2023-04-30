@@ -4,16 +4,26 @@ import random
 import numpy as np
 import math
 import os
+import sys
 from pathlib import Path
 from itertools import repeat
 from collections import OrderedDict
 from sentence_transformers import SentenceTransformer
 import requests
+import pickle
 import math
 import zipfile
 #from logger.logger import *
 from tqdm import tqdm
 
+def write_pickle(data, fname):
+    with open(fname, 'wb') as file:
+        pickle.dump(data, file)
+
+def read_pickle(fname):
+    with open(fname, 'rb') as file:
+        data = pickle.load(file)
+    return data
 
 def ensure_dir(dirname):
     dirname = Path(dirname)
