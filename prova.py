@@ -50,6 +50,12 @@ parser.add_argument('-d', '--device', default=None, type=str,
 config = ConfigParser.from_args(parser)
 # print(config['data'])
 
+def limit_user2item_validation_data(data, size):
+    test_data = data[-1]
+    test_data_reduced = {key: test_data[key][:size] for key in test_data.keys()}
+    # Concatenate the old tuple with the updated validation data
+    return data[:-1] + (test_data_reduced,)
+
 epochs = 1
 batch_size = 64
 train_type = "single_task"
@@ -73,6 +79,13 @@ if not os.path.isfile(f"{config['data']['sentence_embedding_folder']}/valid_news
 #         print(len(line.strip().split("\t")))
 #         break
 
-data = load_data_mind(config, config['data']['sentence_embedding_folder'])
+# data = load_data_mind(config)
+if not os.path.isfile(f"{data_path}/data_mind.pkl"):
+    write_data_mind(config, data_path)
+data = read_pickle(f"{data_path}/data_mind.pkl")
+
+test_data = data[-1]
+data = limit_user2item_validation_data(data, 10000)
 print("Data loaded, ready for training")
+
 single_task_training(config, data)  # user2item
