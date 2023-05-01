@@ -64,6 +64,14 @@ def write_embedding_news(data_folder, save_folder):
     write_pickle(embeddings, f"{save_folder}/{data_folder.split('/')[-1]}_news_embeddings.pkl")
     print(f"Saved news embeddings for {data_folder} to {save_folder}")
 
+def write_data_mind(config, save_folder):
+    if not os.path.isdir(save_folder):
+        print(f"Creating folder {save_folder}")
+        os.mkdir(save_folder)
+    data_mind = load_data_mind(config)
+    write_pickle(data_mind, f"{save_folder}/data_mind.pkl")
+    print(f"Saved data_mind to {save_folder}")
+
 def entities_news(config):
     """
     Return all the entities in the news data. The entities are extracted from the `WikidataId` of the `Title Entities`
@@ -329,10 +337,11 @@ def build_user_history(config):
                 user_history_dict[user_id + "_dev"][0] = 'N0'
     return user_history_dict
 
-def build_news_features_mind(config, entity2embedd, embedding_folder=None):
+def build_news_features_mind(config, entity2embedd):
     # There are 4 features for each news: postion, freq, category, embeddings
     news_features = {}
     news_feature_dict = {}
+    embedding_folder = config['data']['sentence_embedding_folder']
     # Load sentence embeddings from file if present
     with open(config['data']['train_news'], 'r', encoding='utf-8') as fp_train_news:
         if embedding_folder is not None:
@@ -636,7 +645,7 @@ def build_item2item_data(config):
     item2item_test["label"] = label_dev
     return item2item_train, item2item_test
 
-def load_data_mind(config, embedding_folder=None):
+def load_data_mind(config):
     entities = entities_news(config)  # get all entities
     entity2id = entity_to_id(config, entities)  # get dict with key entity WikidataId and value id
     entity_embedding = [np.zeros(config["model"]["entity_embedding_dim"])]
@@ -673,10 +682,9 @@ def load_data_mind(config, embedding_folder=None):
 
     # Load the news
     news_feature, max_entity_freq, max_entity_pos, max_entity_type =\
-        build_news_features_mind(config, entity2embedd, embedding_folder)
+        build_news_features_mind(config, entity2embedd)
 
     user_history = build_user_history(config)
-
 
     if config['trainer']['training_type'] == "multi-task":
         train_data, dev_data = get_user2item_data(config)
