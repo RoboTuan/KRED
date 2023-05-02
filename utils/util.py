@@ -410,6 +410,15 @@ def build_news_features_mind(config, entity2embedd):
             for i in range(len(news_entity_feature_list), config['model']['news_entity_num']):
                 news_entity_feature_list.append([0, 0, 0, 0])
         news_feature_list_ins = [[],[],[],[],[]]
+        """
+        [
+            [entity_embedding_1, entity_embedding_2, ..., entity_embedding_10],
+            [entity_freq_1, entity_freq_2, ..., entity_freq_10],
+            [entity_position_1, entity_position_2, ..., entity_position_10],
+            [entity_type_1, entity_type_2, ..., entity_type_10],
+            [sentence_embedding]
+        ]
+        """
         for i in range(len(news_entity_feature_list)):
             for j in range(4):
                 news_feature_list_ins[j].append(news_entity_feature_list[i][j])
